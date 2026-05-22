@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MdIcon } from "@/components/md3/icon";
 import { SiteHeader } from "@/components/public/site-header";
 import { requireUser } from "@/lib/auth/session";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 
 const userNav = [
   ["Özet", "/panel", "space_dashboard"],
@@ -39,9 +40,10 @@ export async function AppShell({ children, admin = false }: { children: React.Re
 
   if (!admin) {
     return (
-      <div className="min-h-screen bg-[color:var(--sf-bg)] text-white">
+      <div className="min-h-screen bg-[color:var(--sf-bg)] pb-24 text-white lg:pb-0">
         <SiteHeader user={headerUser} />
         <main className="p-4 lg:p-8">{children}</main>
+        <MobileBottomNav variant="panel" />
       </div>
     );
   }

@@ -107,7 +107,7 @@ export function HomeCatalogTabs({ tabs }: { tabs: HomeTab[] }) {
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[color:var(--sf-muted)] sm:text-base lg:mx-0">
             Sosyal medya büyüme hizmetlerinden ajans çözümlerine kadar tüm dijital ihtiyaçlarınızı Sosyofox panelinden yönetin.
           </p>
-          <div className="mt-6 flex items-center justify-center gap-3 lg:justify-start">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
             <Link href="#home-catalog" className="cta inline-flex min-h-11 items-center gap-2 rounded-[12px] px-5 text-sm font-black">
               Hizmetleri Keşfet <MdIcon name="arrow_forward" className="text-lg" />
             </Link>
@@ -175,11 +175,11 @@ export function HomeCatalogTabs({ tabs }: { tabs: HomeTab[] }) {
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#5367ff,#2939a8)] text-white shadow-[0_22px_48px_rgba(61,84,255,0.25)] lg:mx-0">
                 <MdIcon name={activeTab.icons[0] ?? "category"} className="text-4xl" />
               </span>
-              <h2 className="mt-8 text-3xl font-semibold tracking-normal sm:text-5xl">{activeTab.title}</h2>
-              <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-[color:var(--sf-muted)] sm:text-lg lg:mx-0">
+              <h2 className="mt-4 text-2xl font-semibold tracking-normal sm:mt-8 sm:text-4xl md:text-5xl">{activeTab.title}</h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[color:var(--sf-muted)] sm:mt-5 sm:text-lg lg:mx-0">
                 {activeTab.description}
               </p>
-              <div className="mt-8 grid grid-cols-2 gap-4 text-left">
+              <div className="mt-5 grid grid-cols-2 gap-3 text-left sm:mt-8 sm:gap-4">
                 {[
                   ["14 Yıllık", "Deneyim", "cake"],
                   ["82.611.333+", "Başarılı İşlem", "bolt"],
@@ -197,7 +197,7 @@ export function HomeCatalogTabs({ tabs }: { tabs: HomeTab[] }) {
                   </span>
                 ))}
               </div>
-              <p className="mt-7 inline-flex items-start gap-3 text-left text-sm leading-6 text-[color:var(--sf-muted)]">
+              <p className="mt-4 inline-flex items-start gap-3 text-left text-sm leading-6 text-[color:var(--sf-muted)] sm:mt-7">
                 <MdIcon name="verified_user" className="mt-0.5 text-lg text-emerald-400" />
                 <span>{activeTab.title} ürünlerimiz <b className="font-semibold text-emerald-300">güvenli ve organik</b> hizmet akışıyla hazırlanır.</span>
               </p>
@@ -205,7 +205,7 @@ export function HomeCatalogTabs({ tabs }: { tabs: HomeTab[] }) {
 
             {activeTab.items.length ? (
               <div>
-                <div className="home-catalog-grid grid auto-rows-fr grid-cols-3 gap-2.5 sm:gap-4 lg:grid-cols-5">
+                <div className="home-catalog-grid grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
                   {activeTab.items.slice(0, 15).map((item, index) => (
                     <motion.div
                       key={`${activeTab.key}-${item.id}`}

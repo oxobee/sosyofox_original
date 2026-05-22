@@ -460,7 +460,7 @@ button {
   }
 
   .home-hero-art {
-    min-height: 265px;
+    min-height: 240px;
   }
 
   .home-tabs-sticky {
@@ -470,11 +470,11 @@ button {
   }
 
   .category-home-tab {
-    min-height: 74px;
+    min-height: 68px;
     flex-direction: column;
-    gap: 0.38rem;
+    gap: 0.32rem;
     border-radius: 12px;
-    padding: 0.45rem 0.25rem 0.5rem;
+    padding: 0.4rem 0.2rem 0.45rem;
     justify-content: center;
     text-align: center;
   }
@@ -487,53 +487,77 @@ button {
     white-space: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: 0.64rem;
-    line-height: 1.08;
+    font-size: 0.6rem;
+    line-height: 1.1;
   }
 
   .category-tab-icons {
-    min-height: 28px;
+    min-height: 26px;
   }
 
   .category-tab-icon {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
   }
 
   .category-tab-icon + .category-tab-icon {
-    margin-left: -10px;
+    margin-left: -9px;
   }
 
   .category-home-card {
-    min-height: 132px;
+    min-height: 130px;
     border-radius: 12px;
   }
 
+  /* 2-col grid cards on mobile */
   .home-catalog-grid .category-home-card {
-    min-height: 118px;
-    padding: 0.45rem;
+    min-height: 140px;
+    padding: 0.6rem 0.45rem;
   }
 
   .home-catalog-grid .category-home-card > a > span > span:first-child {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
   }
 
   .home-catalog-grid .category-home-card > a > span > span:first-child .material-symbols-rounded {
-    font-size: 25px !important;
+    font-size: 28px !important;
   }
 
   .home-catalog-grid .category-home-card > a > span > span:nth-child(2) {
-    margin-top: 0.55rem;
-    font-size: 0.78rem;
-    line-height: 1.08;
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    line-height: 1.12;
   }
 
   .home-catalog-grid .category-home-card > a > span > span:nth-child(3) {
-    margin-top: 0.15rem;
-    font-size: 0.66rem;
+    margin-top: 0.18rem;
+    font-size: 0.68rem;
     line-height: 1.1;
+  }
+
+  /* Prevent 3D transforms on mobile for performance */
+  .category-home-card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  /* Home service panel compact on mobile */
+  .home-service-panel {
+    padding-inline: 1rem;
+    padding-block: 1.25rem;
+  }
+
+  /* Catalog home tabs row — allow horizontal scroll fallback on very small screens */
+  .category-home-tabs {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .category-home-tabs::-webkit-scrollbar {
+    display: none;
   }
 }
 
