@@ -1,0 +1,511 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  SUPPORT
+  EDITOR
+}
+
+enum UserStatus {
+  ACTIVE
+  PASSIVE
+  BANNED
+  DELETED
+}
+
+enum ThemePreference {
+  DARK
+  LIGHT
+  SYSTEM
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  IYZICO
+  BANK_TRANSFER
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+  WAITING_APPROVAL
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  QUEUED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  FAILED
+  REFUNDED
+  RETRY_PENDING
+}
+
+enum ProfitType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ApiProviderStatus {
+  WAITING_CREDENTIALS
+  ACTIVE
+  ERROR
+  DISABLED
+}
+
+enum TicketStatus {
+  OPEN
+  WAITING
+  ANSWERED
+  CLOSED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+model User {
+  id               String              @id @default(cuid())
+  email            String              @unique
+  passwordHash     String
+  role             UserRole            @default(USER)
+  status           UserStatus          @default(ACTIVE)
+  emailVerifiedAt  DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  profile          UserProfile?
+  billingInfo      BillingInfo?
+  wallet           Wallet?
+  sessions         Session[]
+  walletEntries    WalletTransaction[]
+  payments         Payment[]
+  orders           Order[]
+  tickets          SupportTicket[]
+  supportMessages  SupportMessage[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]          @relation("AuditActor")
+  aiJobs           AiRenameJob[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserProfile {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  fullName        String?
+  phone           String?
+  avatarUrl       String?
+  themePreference ThemePreference @default(SYSTEM)
+  adminNotes      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BillingInfo {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  type         String   @default("individual")
+  fullName     String?
+  companyName  String?
+  taxNumber    String?
+  taxOffice    String?
+  address      String?
+  city         String?
+  district     String?
+  phone        String?
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(14, 2)
+  currency  String   @default("TRY")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WalletTransaction {
+  id          String            @id @default(cuid())
+  userId      String
+  paymentId   String?
+  orderId     String?
+  type        TransactionType
+  status      TransactionStatus @default(COMPLETED)
+  amount      Decimal           @db.Decimal(14, 2)
+  currency    String            @default("TRY")
+  description String
+  metadata    Json              @default("{}")
+  createdAt   DateTime          @default(now())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     Payment?          @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model Payment {
+  id             String              @id @default(cuid())
+  userId         String?
+  provider       PaymentProvider
+  status         PaymentStatus       @default(PENDING)
+  amount         Decimal             @db.Decimal(14, 2)
+  feeAmount      Decimal             @default(0) @db.Decimal(14, 2)
+  currency       String              @default("TRY")
+  externalId     String?
+  callbackToken  String?
+  metadata       Json                @default("{}")
+  paidAt         DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  walletEntries  WalletTransaction[]
+  bankTransfer   BankTransferNotification?
+}
+
+model BankTransferNotification {
+  id             String        @id @default(cuid())
+  paymentId      String        @unique
+  bankName       String
+  iban           String
+  senderName     String
+  receiptUrl     String?
+  note           String?
+  status         PaymentStatus @default(WAITING_APPROVAL)
+  createdAt      DateTime      @default(now())
+  reviewedAt     DateTime?
+  payment        Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                    String              @id @default(cuid())
+  userId                String
+  serviceId             String
+  status                OrderStatus         @default(PENDING_PAYMENT)
+  targetUrl             String
+  quantity              Int
+  unitPrice             Decimal             @db.Decimal(14, 4)
+  totalPrice            Decimal             @db.Decimal(14, 2)
+  providerCost          Decimal             @default(0) @db.Decimal(14, 4)
+  netProfit             Decimal             @default(0) @db.Decimal(14, 2)
+  providerOrderId       String?
+  providerResponse      Json                @default("{}")
+  retryCount            Int                 @default(0)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  service               Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  statusHistory         OrderStatusHistory[]
+  walletEntries         WalletTransaction[]
+  supportTickets        SupportTicket[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  metadata  Json        @default("{}")
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id                     String       @id @default(cuid())
+  providerCategoryName   String?
+  sosyofoxCategoryName   String
+  slug                   String       @unique
+  description            String?
+  seoTitle               String?
+  seoDescription         String?
+  icon                   String       @default("category")
+  isVisible              Boolean      @default(false)
+  isFeatured             Boolean      @default(false)
+  sortOrder              Int          @default(0)
+  profitType             ProfitType   @default(PERCENTAGE)
+  profitValue            Decimal      @default(30) @db.Decimal(10, 2)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  services               Service[]
+}
+
+model Service {
+  id                    String                @id @default(cuid())
+  categoryId            String?
+  providerServiceId     String?
+  providerCategoryName  String?
+  providerServiceName   String?
+  min                   Int                   @default(1)
+  max                   Int                   @default(1000)
+  originalRate          Decimal               @default(0) @db.Decimal(14, 4)
+  description           String?
+  apiStatus             String                @default("waiting_credentials")
+  sosyofoxCategoryName  String?
+  sosyofoxServiceName   String
+  slug                  String                @unique
+  customDescription     String?
+  seoTitle              String?
+  seoDescription        String?
+  icon                  String                @default("rocket_launch")
+  isVisible             Boolean               @default(false)
+  isFeatured            Boolean               @default(false)
+  sortOrder             Int                   @default(0)
+  profitType            ProfitType            @default(PERCENTAGE)
+  profitValue           Decimal               @default(30) @db.Decimal(10, 2)
+  finalPrice            Decimal               @default(0) @db.Decimal(14, 4)
+  estimatedDelivery     String?
+  warningText           String?
+  manualProcessing      Boolean               @default(false)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  category              Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  mappings              ServiceMapping[]
+  priceHistory          ServicePriceHistory[]
+  orders                Order[]
+  aiSuggestions         AiRenameSuggestion[]
+
+  @@index([categoryId, isVisible])
+  @@index([providerServiceId])
+}
+
+model ServiceMapping {
+  id             String   @id @default(cuid())
+  serviceId      String
+  providerName   String
+  providerRef    String?
+  originalName   String?
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, providerName])
+}
+
+model ServicePriceHistory {
+  id             String   @id @default(cuid())
+  serviceId      String
+  oldRate        Decimal  @db.Decimal(14, 4)
+  newRate        Decimal  @db.Decimal(14, 4)
+  oldFinalPrice  Decimal  @db.Decimal(14, 4)
+  newFinalPrice  Decimal  @db.Decimal(14, 4)
+  reason         String
+  createdAt      DateTime @default(now())
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+}
+
+model ApiProvider {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  displayName String
+  status      ApiProviderStatus @default(WAITING_CREDENTIALS)
+  baseUrl     String?
+  metadata    Json              @default("{}")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  credentials ApiCredential[]
+}
+
+model ApiCredential {
+  id              String      @id @default(cuid())
+  providerId      String
+  label           String
+  encryptedValue  String
+  keyHint         String?
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  provider        ApiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model IntegrationSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SeoSetting {
+  id          String   @id @default(cuid())
+  path        String   @unique
+  title       String
+  description String
+  keywords    String?
+  ogImage     String?
+  jsonLd      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LegalPage {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  content        String
+  seoTitle       String?
+  seoDescription String?
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String           @id @default(cuid())
+  userId    String
+  orderId   String?
+  subject   String
+  status    TicketStatus     @default(OPEN)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  messages  SupportMessage[]
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  userId    String?
+  body      String
+  isStaff   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  title     String
+  body      String
+  type      String
+  readAt    DateTime?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+}
+
+model AiRenameJob {
+  id          String               @id @default(cuid())
+  actorId     String?
+  status      String               @default("pending")
+  provider    String               @default("openai")
+  inputCount   Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  completedAt DateTime?
+  actor       User?                @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  suggestions AiRenameSuggestion[]
+}
+
+model AiRenameSuggestion {
+  id             String      @id @default(cuid())
+  jobId          String
+  serviceId      String?
+  categoryName   String?
+  serviceName    String
+  shortText      String?
+  longText       String?
+  seoTitle       String?
+  seoDescription String?
+  warningText    String?
+  status         String      @default("pending")
+  createdAt      DateTime    @default(now())
+  job            AiRenameJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  service        Service?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+}
+
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  type            CouponType
+  value           Decimal    @db.Decimal(10, 2)
+  minimumAmount   Decimal    @default(0) @db.Decimal(14, 2)
+  usageLimit      Int?
+  usageCount      Int        @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  isActive    Boolean  @default(true)
+  rules       Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

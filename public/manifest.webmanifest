@@ -1,0 +1,17 @@
+{
+  "name": "Sosyofox",
+  "short_name": "Sosyofox",
+  "description": "Sosyal medya ve platform büyüme hizmetleri paneli.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#ff7a1a",
+  "icons": [
+    {
+      "src": "/brand/icon.png",
+      "sizes": "192x222",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
